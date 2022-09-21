@@ -89,7 +89,7 @@ const App = (props) => {
       });
       setGameOver('You Won!');
     } else if (num.current === 6) {
-      setGameOver('You Lost!');
+      setGameOver(`You Lost! The answer was: ${answer}.`);
       setStreak(0);
     }
   };
@@ -151,7 +151,7 @@ const App = (props) => {
           </div>
         </div>
         <div className='right'>
-          <div className='answer'>{answer}</div>
+          {/* <div className='answer'>{answer}</div> */}
           <form onSubmit={handleSubmit}>
             <input onChange={handleChange} type='text' maxLength={5} placeholder='next guess...' autoFocus ref={input} />
             <button type='submit'>{valid}</button>
