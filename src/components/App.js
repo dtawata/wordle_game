@@ -11,9 +11,8 @@ const App = (props) => {
   const input = useRef();
   const num = useRef(0);
   const [streak, setStreak] = useState(0);
-  const [winner, setWinner] = useState(false);
   const [newGame, setNewGame] = useState(true);
-
+  const [gameOver, setGameOver] = useState(false);
   const [stylings, setStylings] = useState([['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']]);
 
   const [lettersCss, setLettersCss] = useState(['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter']);
@@ -37,6 +36,12 @@ const App = (props) => {
   }, [newGame])
 
   useEffect(() => {
+    if (num.current === 6) return;
+    const guessesClone = [...guesses];
+    for (let i = 0; i < 5; i++) {
+      guessesClone[num.current][i] = guess[i];
+    }
+    setGuesses(guessesClone);
     if (guess.length < 5) {
       setValid('Pending');
       return;
@@ -79,10 +84,13 @@ const App = (props) => {
     input.current.value = '';
     setGuess('');
     if (tally === 5) {
-      setWinner(true);
       setStreak((prevStreak) => {
         return prevStreak + 1;
       });
+      setGameOver('You Won!');
+    } else if (num.current === 6) {
+      setGameOver('You Lost!');
+      setStreak(0);
     }
   };
 
@@ -90,12 +98,13 @@ const App = (props) => {
     setGuess(input.current.value);
   };
 
-  useEffect(() => {
-    console.log('hello', lettersCss);
-  }, [lettersCss])
+  const startNewGame = () => {
+    setNewGame(!newGame);
+    setGameOver(false);
+  };
 
   return (
-    <div>
+    <div className='container'>
       <div className='main'>
         <div className='left'>
           <div className='guess'>
@@ -153,9 +162,14 @@ const App = (props) => {
             })}
           </div>
           <div className='streak'>Win Streak: {streak}</div>
-          {winner ? <div onClick={() => { setNewGame(!newGame); }} className='status'>You Won! Play Again?</div> : <div className='status'>You Lost</div>}
         </div>
       </div>
+      {gameOver && <div className='modal'>
+        <div className='inner'>
+          <div className='status'>{gameOver}</div>
+          <div onClick={startNewGame} className='new_game_button'>Play Again?</div>
+        </div>
+      </div>}
     </div>
   );
 };

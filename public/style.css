@@ -11,12 +11,17 @@ html, body {
   font-family: "Roboto", sans-serif;
 }
 
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: red;
+}
 .main {
   display: flex;
 }
 
 .left {
-  width: 30%;
+  width: 50%;
   height: 100vh;
   padding: 40px 20px;
   background-color: beige;
@@ -57,7 +62,7 @@ html, body {
 }
 
 .right {
-  width: 36%;
+  width: 50%;
   height: 100vh;
   padding: 40px;
   background-color: beige;
@@ -141,4 +146,42 @@ button:hover {
   margin-top: 40px;
   font-size: 20px;
   letter-spacing: 1px;
+}
+
+.modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.inner {
+  width: 50%;
+  height: 60%;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 4px;
+}
+
+.status {
+  font-size: 24px;
+  text-align: center;
+}
+.new_game_button {
+  width: 300px;
+  margin: 20px auto 0 auto;
+  padding: 10px;
+  background-color: #ff6347;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-align: center;
+  text-transform: uppercase;
 }
