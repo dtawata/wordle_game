@@ -33,6 +33,7 @@ const App = (props) => {
       setGuesses(([[],[],[],[],[],[]]));
       num.current = 0;
     })();
+    input.current.focus();
   }, [newGame])
 
   useEffect(() => {
@@ -153,7 +154,7 @@ const App = (props) => {
         <div className='right'>
           {/* <div className='answer'>{answer}</div> */}
           <form onSubmit={handleSubmit}>
-            <input onChange={handleChange} type='text' maxLength={5} placeholder='next guess...' autoFocus ref={input} />
+            <input onChange={handleChange} type='text' maxLength={5} placeholder='next guess...' ref={input} />
             <button type='submit'>{valid}</button>
           </form>
           <div className='letters'>
