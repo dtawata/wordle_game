@@ -10,12 +10,16 @@ const App = (props) => {
   const [valid, setValid] = useState('Submit');
   const input = useRef();
   const num = useRef(0);
+  const modal = useRef();
   const [streak, setStreak] = useState(0);
   const [newGame, setNewGame] = useState(true);
   const [gameOver, setGameOver] = useState(false);
   const [stylings, setStylings] = useState([['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']]);
   const [lettersCss, setLettersCss] = useState(['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter']);
   const letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+
+  // useEffect(() => {
+  // }, [])
 
   useEffect(() => {
     (async () => {
@@ -57,6 +61,7 @@ const App = (props) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (valid !== 'Submit') return;
+    input.current.value = '';
     const stylingsClone = stylings.slice();
     const lettersCssClone = lettersCss.slice();
     let tally = 0;
@@ -100,7 +105,6 @@ const App = (props) => {
     setGuesses(guessesClone);
     setLettersCss(lettersCssClone);
     num.current++;
-    input.current.value = '';
     setGuess('');
     if (num.current === 6) {
       setGameOver(`You Lost! The answer was: ${answer}.`);
@@ -113,9 +117,29 @@ const App = (props) => {
   };
 
   const startNewGame = () => {
+    console.log('starting new game');
     setNewGame(!newGame);
     setGameOver(false);
   };
+
+  useEffect(() => {
+    if (gameOver) {
+      const keyDownHandler = (e) => {
+        console.log(e.key);
+        if (e.key === 'Enter') {
+          // setNewGame(!newGame);
+          setGameOver(false);
+        }
+      };
+      input.current.blur();
+      document.addEventListener('keydown', keyDownHandler);
+      return () => {
+        document.removeEventListener('keydown', keyDownHandler);
+      };
+    } else {
+      setNewGame(!newGame);
+    }
+  }, [gameOver])
 
   return (
     <div className='container'>
@@ -177,13 +201,13 @@ const App = (props) => {
           </div>
           <div className='streak'>Win Streak: {streak}</div>
         </div>
+        {gameOver && <div className='modal'>
+            <div className='inner'>
+              <div className='status'>{gameOver}</div>
+              <div onClick={startNewGame} className='new_game_button'>Play Again?</div>
+            </div>
+          </div>}
       </div>
-      {gameOver && <div className='modal'>
-        <div className='inner'>
-          <div className='status'>{gameOver}</div>
-          <div onClick={startNewGame} className='new_game_button'>Play Again?</div>
-        </div>
-      </div>}
     </div>
   );
 };
