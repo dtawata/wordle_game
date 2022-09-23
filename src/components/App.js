@@ -14,7 +14,6 @@ const App = (props) => {
   const [newGame, setNewGame] = useState(true);
   const [gameOver, setGameOver] = useState(false);
   const [stylings, setStylings] = useState([['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']]);
-
   const [lettersCss, setLettersCss] = useState(['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter']);
   const letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 
@@ -60,20 +59,37 @@ const App = (props) => {
     const stylingsClone = stylings.slice();
     const lettersCssClone = lettersCss.slice();
     let tally = 0;
+    const objClone = { ...obj };
     for (let i = 0; i < 5; i++) {
       const letterIdx = letters.indexOf(guess[i].toUpperCase());
       if (answer[i] === guess[i]) {
         stylingsClone[num.current][i] = 'char green';
         lettersCssClone[letterIdx] = 'letter green';
         tally++;
-      } else if (obj[guess[i]]) {
+        objClone[guess[i]]--;
+      }
+    }
+    if (tally === 5) {
+      setStreak((prevStreak) => {
+        return prevStreak + 1;
+      });
+      setGameOver('You Won!');
+    }
+
+    for (let i = 0; i < 5; i++) {
+      if (answer[i] === guess[i]) continue;
+      const letterIdx = letters.indexOf(guess[i].toUpperCase());
+      if (objClone[guess[i]]) {
         stylingsClone[num.current][i] = 'char orange';
         if (lettersCssClone[letterIdx] !== 'letter green') {
           lettersCssClone[letterIdx] = 'letter orange';
         }
+        objClone[guess[i]]--;
       } else {
         stylingsClone[num.current][i] = 'char black';
-        lettersCssClone[letterIdx] = 'letter black';
+        if (lettersCssClone[letterIdx] === 'letter') {
+          lettersCssClone[letterIdx] = 'letter black';
+        }
       }
     }
     setStylings(stylingsClone);
@@ -84,12 +100,7 @@ const App = (props) => {
     num.current++;
     input.current.value = '';
     setGuess('');
-    if (tally === 5) {
-      setStreak((prevStreak) => {
-        return prevStreak + 1;
-      });
-      setGameOver('You Won!');
-    } else if (num.current === 6) {
+    if (num.current === 6) {
       setGameOver(`You Lost! The answer was: ${answer}.`);
       setStreak(0);
     }
