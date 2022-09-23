@@ -19,7 +19,8 @@ const App = (props) => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await axios.get('/api/word');
+      // const { data } = await axios.get('/api/word');
+      const data = 'libel';
       const map = {};
       for (const char of data) {
         map[char] = map[char] || 0;
@@ -74,6 +75,7 @@ const App = (props) => {
         return prevStreak + 1;
       });
       setGameOver('You Won!');
+      return;
     }
 
     for (let i = 0; i < 5; i++) {
