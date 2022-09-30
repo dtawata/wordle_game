@@ -1,212 +1,178 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useReducer } from 'react';
 import axios from 'axios';
-// import styles from './App.module.css';
+import Guesses from './Guesses';
+import Modal from './Modal';
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'initialize':
+      return {
+        guesses: [[],[],[],[],[],[]],
+        charCss: [['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']],
+        letterCss: ['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter'],
+        button: { text: 'Submit', css: 'button disabled' }
+      }
+    case 'updateGuess':
+      const updateState = { ...state };
+      updateState.guesses[action.attempt] = action.guess.split('');
+      updateState.button = action.valid;
+      return updateState;
+    case 'submit':
+      const submitState = { ...state };
+      const map = { ...action.map };
+      let tally = 0;
+      for (let i = 0; i < 5; i++) {
+        if (action.answer[i] === action.guess[i]) {
+          submitState.charCss[action.attempt][i] = 'char green';
+          const letterIdx = action.letters.indexOf(action.guess[i].toUpperCase());
+          submitState.letterCss[letterIdx] = 'letter green';
+          map[action.guess[i]]--;
+          tally++;
+        }
+      }
+      if (tally === 5) {
+        submitState.button = { text: 'Submit', css: 'button disabled' };
+        submitState.gameOver = 'winner';
+        return submitState;
+      }
+      for (let i = 0; i < 5; i++) {
+        if (submitState.charCss[action.attempt][i] === 'char green') continue;
+        const letterIdx = action.letters.indexOf(action.guess[i].toUpperCase());
+        if (map[action.guess[i]]) {
+          submitState.charCss[action.attempt][i] = 'char orange';
+          if (submitState.letterCss[letterIdx] !== 'letter green') {
+            submitState.letterCss[letterIdx] = 'letter orange';
+          }
+          map[action.guess[i]]--;
+        } else {
+          submitState.charCss[action.attempt][i] = 'char black';
+          if (submitState.letterCss[letterIdx] === 'letter') {
+            submitState.letterCss[letterIdx] = 'letter black';
+          }
+        }
+      }
+      submitState.button = { text: 'Submit', css: 'button disabled' };
+      if (action.attempt === 5) submitState.gameOver = 'loser';
+      return submitState;
+    default:
+      throw new Error('not a valid type');
+  }
+};
+
+const ACTION = {
+  INITIALIZE: 'initialize',
+  UPDATE_GUESS: 'updateGuess',
+  SUBMIT: 'submit'
+};
 
 const App = (props) => {
-  const [answer, setAnswer] = useState();
-  const [obj, setObj] = useState({});
-  const [guess, setGuess] = useState('');
-  const [guesses, setGuesses] = useState([[],[],[],[],[],[]])
-  const [valid, setValid] = useState('Submit');
+
+  const [state, dispatch] = useReducer(reducer, {
+    guesses: [[],[],[],[],[],[]],
+    charCss: [['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']],
+    letterCss: ['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter'],
+    button: { text: 'Submit', css: 'button' },
+    gameOver: false
+  });
+
+  const [game, setGame] = useState(1);
+  const answer = useRef('');
+  const map = useRef({});
+  const attempt = useRef(0);
   const input = useRef();
-  const num = useRef(0);
-  const modal = useRef();
-  const [streak, setStreak] = useState(0);
-  const [newGame, setNewGame] = useState(true);
-  const [gameOver, setGameOver] = useState(false);
-  const [stylings, setStylings] = useState([['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']]);
-  const [lettersCss, setLettersCss] = useState(['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter']);
+
   const letters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 
-  // useEffect(() => {
-  // }, [])
-
   useEffect(() => {
     (async () => {
-      // const { data } = await axios.get('/api/word');
-      const data = 'libel';
-      const map = {};
-      for (const char of data) {
-        map[char] = map[char] || 0;
-        map[char]++;
+      const { data } = await axios.get('/api/word');
+      answer.current = data;
+      // answer.current = 'ready';
+      for (const char of answer.current) {
+        map.current[char] = map.current[char] || 0;
+        map.current[char]++;
       }
-      setObj(map);
-      setAnswer(data);
-      setStylings([['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char'],['char','char','char','char','char']]);
-      setLettersCss(['letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter','letter']);
-      setGuesses(([[],[],[],[],[],[]]));
-      num.current = 0;
+      attempt.current = 0;
+      input.current.focus();
+      dispatch({
+        type: ACTION.INITIALIZE
+      });
     })();
-    input.current.focus();
-  }, [newGame])
-
-  useEffect(() => {
-    if (num.current === 6) return;
-    const guessesClone = [...guesses];
-    for (let i = 0; i < 5; i++) {
-      guessesClone[num.current][i] = guess[i];
-    }
-    setGuesses(guessesClone);
-    if (guess.length < 5) {
-      setValid('Pending');
-      return;
-    }
-    (async () => {
-      const { data } = await axios.get(`/api/valid/${guess}`);
-      if (data) setValid('Submit');
-      else setValid('Not a Word');
-    })();
-  }, [guess])
+  }, [game])
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (valid !== 'Submit') return;
+    if (state.button.css !== 'button submit' || attempt.current === 6 || state.gameOver) return;
+    dispatch({
+      type: ACTION.SUBMIT,
+      guess: input.current.value,
+      attempt: attempt.current,
+      answer: answer.current,
+      map: map.current,
+      letters
+    });
     input.current.value = '';
-    const stylingsClone = stylings.slice();
-    const lettersCssClone = lettersCss.slice();
-    let tally = 0;
-    const objClone = { ...obj };
-    for (let i = 0; i < 5; i++) {
-      const letterIdx = letters.indexOf(guess[i].toUpperCase());
-      if (answer[i] === guess[i]) {
-        stylingsClone[num.current][i] = 'char green';
-        lettersCssClone[letterIdx] = 'letter green';
-        tally++;
-        objClone[guess[i]]--;
-      }
-    }
-    if (tally === 5) {
-      setStreak((prevStreak) => {
-        return prevStreak + 1;
-      });
-      setGameOver('You Won!');
-      return;
-    }
-
-    for (let i = 0; i < 5; i++) {
-      if (answer[i] === guess[i]) continue;
-      const letterIdx = letters.indexOf(guess[i].toUpperCase());
-      if (objClone[guess[i]]) {
-        stylingsClone[num.current][i] = 'char orange';
-        if (lettersCssClone[letterIdx] !== 'letter green') {
-          lettersCssClone[letterIdx] = 'letter orange';
-        }
-        objClone[guess[i]]--;
-      } else {
-        stylingsClone[num.current][i] = 'char black';
-        if (lettersCssClone[letterIdx] === 'letter') {
-          lettersCssClone[letterIdx] = 'letter black';
-        }
-      }
-    }
-    setStylings(stylingsClone);
-    const guessesClone = guesses.slice();
-    guessesClone[num.current] = guess.split('');
-    setGuesses(guessesClone);
-    setLettersCss(lettersCssClone);
-    num.current++;
-    setGuess('');
-    if (num.current === 6) {
-      setGameOver(`You Lost! The answer was: ${answer}.`);
-      setStreak(0);
-    }
+    attempt.current++;
   };
 
-  const handleChange = () => {
-    setGuess(input.current.value);
+  const handleChange = (e) => {
+    if (attempt.current === 6) return;
+    if (input.current.value.length < 5) {
+      dispatch({
+        type: ACTION.UPDATE_GUESS,
+        guess: input.current.value,
+        attempt: attempt.current,
+        valid: { text: 'Submit', css: 'button disabled' }
+      });
+    } else {
+      (async () => {
+        const { data } = await axios.get(`/api/valid/${input.current.value}`);
+        dispatch({
+          type: ACTION.UPDATE_GUESS,
+          guess: input.current.value,
+          attempt: attempt.current,
+          valid: data ? { text: 'Submit', css: 'button submit' } : { text: 'Not a Word', css: 'button invalid' }
+        });
+      })();
+    }
   };
 
   const startNewGame = () => {
-    console.log('starting new game');
-    setNewGame(!newGame);
-    setGameOver(false);
+    setGame((prevGame) => {
+      return prevGame + 1;
+    });
+  };
+
+  const keyDownHandler = (e) => {
+    if (e.key === 'Enter') startNewGame();
   };
 
   useEffect(() => {
-    if (gameOver) {
-      const keyDownHandler = (e) => {
-        console.log(e.key);
-        if (e.key === 'Enter') {
-          // setNewGame(!newGame);
-          setGameOver(false);
-        }
-      };
-      input.current.blur();
+    if (state.gameOver) {
       document.addEventListener('keydown', keyDownHandler);
       return () => {
         document.removeEventListener('keydown', keyDownHandler);
       };
-    } else {
-      setNewGame(!newGame);
     }
-  }, [gameOver])
+  }, [state.gameOver])
 
   return (
     <div className='container'>
       <div className='main'>
-        <div className='left'>
-          <div className='guess'>
-            <div className={stylings[0][0]}>{guesses[0][0]}</div>
-            <div className={stylings[0][1]}>{guesses[0][1]}</div>
-            <div className={stylings[0][2]}>{guesses[0][2]}</div>
-            <div className={stylings[0][3]}>{guesses[0][3]}</div>
-            <div className={stylings[0][4]}>{guesses[0][4]}</div>
-          </div>
-          <div className='guess'>
-            <div className={stylings[1][0]}>{guesses[1][0]}</div>
-            <div className={stylings[1][1]}>{guesses[1][1]}</div>
-            <div className={stylings[1][2]}>{guesses[1][2]}</div>
-            <div className={stylings[1][3]}>{guesses[1][3]}</div>
-            <div className={stylings[1][4]}>{guesses[1][4]}</div>
-          </div>
-          <div className='guess'>
-            <div className={stylings[2][0]}>{guesses[2][0]}</div>
-            <div className={stylings[2][1]}>{guesses[2][1]}</div>
-            <div className={stylings[2][2]}>{guesses[2][2]}</div>
-            <div className={stylings[2][3]}>{guesses[2][3]}</div>
-            <div className={stylings[2][4]}>{guesses[2][4]}</div>
-          </div>
-          <div className='guess'>
-            <div className={stylings[3][0]}>{guesses[3][0]}</div>
-            <div className={stylings[3][1]}>{guesses[3][1]}</div>
-            <div className={stylings[3][2]}>{guesses[3][2]}</div>
-            <div className={stylings[3][3]}>{guesses[3][3]}</div>
-            <div className={stylings[3][4]}>{guesses[3][4]}</div>
-          </div>
-          <div className='guess'>
-            <div className={stylings[4][0]}>{guesses[4][0]}</div>
-            <div className={stylings[4][1]}>{guesses[4][1]}</div>
-            <div className={stylings[4][2]}>{guesses[4][2]}</div>
-            <div className={stylings[4][3]}>{guesses[4][3]}</div>
-            <div className={stylings[4][4]}>{guesses[4][4]}</div>
-          </div>
-          <div className='guess'>
-            <div className={stylings[5][0]}>{guesses[5][0]}</div>
-            <div className={stylings[5][1]}>{guesses[5][1]}</div>
-            <div className={stylings[5][2]}>{guesses[5][2]}</div>
-            <div className={stylings[5][3]}>{guesses[5][3]}</div>
-            <div className={stylings[5][4]}>{guesses[5][4]}</div>
-          </div>
-        </div>
+        <Guesses state={state} />
         <div className='right'>
-          {/* <div className='answer'>{answer}</div> */}
           <form onSubmit={handleSubmit}>
             <input onChange={handleChange} type='text' maxLength={5} placeholder='next guess...' ref={input} />
-            <button type='submit'>{valid}</button>
+            <button className={state.button.css} type='submit'>{state.button.text}</button>
           </form>
           <div className='letters'>
             {letters.map((letter, index) => {
-              return <div className={lettersCss[index]} key={index}>{letter}</div>;
+              return <div className={state.letterCss[index]} key={index}>{letter}</div>;
             })}
           </div>
-          <div className='streak'>Win Streak: {streak}</div>
+          <div className='game_count'>Game #: {game}</div>
         </div>
-        {gameOver && <div className='modal'>
-            <div className='inner'>
-              <div className='status'>{gameOver}</div>
-              <div onClick={startNewGame} className='new_game_button'>Play Again?</div>
-            </div>
-          </div>}
+        {state.gameOver && <Modal state={state} answer={answer} startNewGame={startNewGame} />}
       </div>
     </div>
   );
